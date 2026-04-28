@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnferIA - Termos Técnicos</title>
+    <!-- Tailwind CSS (CDN para não precisar instalar nada) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Estilos adicionais mínimos para garantir que as caixas de texto fiquem perfeitas */
+        textarea { outline: none; }
+        .hidden-element { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-200">
+
+    <!-- Header -->
+    <header class="bg-teal-700 text-white shadow-md">
+        <div class="container mx-auto px-4 py-6 max-w-5xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-lg">
+                    <i data-lucide="stethoscope" class="text-teal-50 w-8 h-8"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide uppercase">EnferIA Termos Técnicos</h1>
+                    <p class="text-teal-100 text-sm font-medium uppercase tracking-wider">Padrão Ministério da Saúde</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 max-w-5xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            
+            <!-- Painel Esquerdo: Input Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                <div class="bg-slate-100/50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                    <h2 class="font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                        Relato do Paciente
+                    </h2>
+                    <button id="clear-btn" class="text-slate-400 hover:text-teal-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase" title="LIMPAR DADOS">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Limpar
+                    </button>
+                </div>
+                <div class="p-4 md:p-6 flex-grow flex flex-col">
+                    <label for="symptoms-input" class="sr-only">Sintomas (Termo Leigo)</label>
+                    <textarea
+                        id="symptoms-input"
+                        class="w-full h-48 md:h-80 p-3 md:p-4 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none uppercase text-base md:text-lg text-slate-700 placeholder:text-slate-400 font-medium"
+                        placeholder="EX: PACIENTE RECLAMA DE DOR DE CABEÇA FORTE, ESTÁ QUENTE E COM VONTADE DE VOMITAR..."
+                    ></textarea>
+                    
+                    <button
+                        id="translate-btn"
+                        disabled
+                        class="mt-4 w-full py-4 px-6 rounded-lg font-bold text-white tracking-wider uppercase flex items-center justify-center gap-2 transition-all bg-slate-300 cursor-not-allowed"
+                    >
+                        <i data-lucide="refresh-cw" id="btn-spinner" class="w-5 h-5 animate-spin hidden-element"></i>
+                        <span id="btn-text">TRADUZIR PARA TERMO TÉCNICO</span>
+                        <i data-lucide="arrow-right" id="btn-arrow" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Painel Direito: Output Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                <div class="bg-teal-50 border-b border-teal-100 px-6 py-4 flex justify-between items-center">
+                    <h2 class="font-bold text-teal-800 uppercase tracking-wide flex items-center gap-2">
+                        Evolução / Termo Técnico
+                    </h2>
+                    
+                    <button id="copy-btn" class="hidden-element items-center gap-1 text-xs font-bold uppercase transition-colors px-3 py-1.5 rounded-md bg-white border border-teal-200 text-teal-700 hover:bg-teal-100">
+                        <i data-lucide="copy" id="copy-icon-regular" class="w-3.5 h-3.5"></i>
+                        <i data-lucide="check-circle-2" id="copy-icon-check" class="w-3.5 h-3.5 hidden-element"></i>
+                        <span id="copy-text" class="hidden sm:inline">COPIAR</span>
+                    </button>
+                    
+                </div>
+                
+                <div class="p-4 md:p-6 flex-grow flex flex-col">
+                    <!-- Mensagem de Erro -->
+                    <div id="error-container" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700 hidden-element">
+                        <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                        <p id="error-text" class="text-sm font-bold uppercase leading-relaxed"></p>
+                    </div>
+
+                    <div class="relative flex-grow">
+                        <textarea
+                            id="technical-output"
+                            readonly
+                            class="w-full h-full min-h-[12rem] md:min-h-[16rem] p-3 md:p-4 bg-white border border-slate-200 rounded-lg resize-none uppercase text-base md:text-lg text-slate-800 font-semibold focus:outline-none text-slate-300 items-center justify-center"
+                            placeholder="A TRADUÇÃO TÉCNICA APARECERÁ AQUI..."
+                        ></textarea>
+                        
+                        <!-- Overlay de Carregamento -->
+                        <div id="loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center border border-slate-200 hidden-element">
+                            <div class="flex flex-col items-center gap-3 text-teal-600">
+                                <i data-lucide="refresh-cw" class="w-8 h-8 animate-spin"></i>
+                                <span class="font-bold tracking-widest uppercase text-sm">CONSULTANDO DIRETRIZES...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <!-- JavaScript para gerenciar a lógica -->
+    <script>
+        // Inicializa os ícones do Lucide
+        lucide.createIcons();
+
+        // Chave da API diretamente no script para o GitHub Pages
+        const apiKey = "AIzaSyB_dXyluIU5N4ISI6Fn3366vTFgeq-iQqE"; 
+
+        // Elementos do DOM
+        const inputEl = document.getElementById('symptoms-input');
+        const outputEl = document.getElementById('technical-output');
+        const translateBtn = document.getElementById('translate-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const errorContainer = document.getElementById('error-container');
+        const errorText = document.getElementById('error-text');
+
+        // Elementos internos do botão Traduzir
+        const btnText = document.getElementById('btn-text');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const btnArrow = document.getElementById('btn-arrow');
+
+        // Elementos internos do botão Copiar
+        const copyIconRegular = document.getElementById('copy-icon-regular');
+        const copyIconCheck = document.getElementById('copy-icon-check');
+        const copyTextLabel = document.getElementById('copy-text');
+
+        // Evento de digitação: Força maiúsculo e habilita/desabilita botão
+        inputEl.addEventListener('input', (e) => {
+            // Força a caixa alta
+            e.target.value = e.target.value.toUpperCase();
+            
+            // Valida se há texto para ativar o botão
+            if (e.target.value.trim().length > 0) {
+                translateBtn.disabled = false;
+                translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
+                translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+            } else {
+                translateBtn.disabled = true;
+                translateBtn.classList.add('bg-slate-300', 'cursor-not-allowed');
+                translateBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+            }
+        });
+
+        // Evento do botão Limpar
+        clearBtn.addEventListener('click', () => {
+            inputEl.value = '';
+            outputEl.value = '';
+            outputEl.classList.add('text-slate-300');
+            outputEl.classList.remove('shadow-inner', 'text-slate-800');
+            errorContainer.classList.add('hidden-element');
+            copyBtn.classList.add('hidden-element');
+            copyBtn.classList.remove('flex');
+            
+            // Dispara manualmente o evento input para desativar o botão traduzir
+            inputEl.dispatchEvent(new Event('input'));
+        });
+
+        // Evento do botão Traduzir (Lógica de Inteligência Artificial)
+        translateBtn.addEventListener('click', async () => {
+            const inputText = inputEl.value.trim();
+            if (!inputText) return;
+
+            // Ativa estado de carregamento
+            inputEl.disabled = true;
+            translateBtn.disabled = true;
+            translateBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+            translateBtn.classList.add('bg-slate-300', 'cursor-not-allowed');
+            
+            btnText.innerText = 'PROCESSANDO TRADUÇÃO...';
+            btnSpinner.classList.remove('hidden-element');
+            btnArrow.classList.add('hidden-element');
+            
+            loadingOverlay.classList.remove('hidden-element');
+            errorContainer.classList.add('hidden-element');
+            outputEl.value = '';
+            copyBtn.classList.add('hidden-element');
+            copyBtn.classList.remove('flex');
+
+            const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR E ASSISTENTE ESPECIALISTA. 
+            SUA FUNÇÃO É RECEBER UM RELATO LEIGO E REESCREVÊ-LO COMO UMA ANOTAÇÃO/EVOLUÇÃO DE ENFERMAGEM PROFISSIONAL, 
+            UTILIZANDO ESTRITAMENTE A TERMINOLOGIA TÉCNICA E MÉDICA CORRETA SEGUNDO AS DIRETRIZES DO MINISTÉRIO DA SAÚDE DO BRASIL.
+
+            EXEMPLOS DE TRADUÇÃO (DE LEIGO PARA TÉCNICO):
+            - "Dor de cabeça" -> "CEFALEIA"
+            - "Falta de ar" -> "DISPNEIA"
+            - "Vontade de vomitar" -> "NÁUSEA"
+            - "Vômito" -> "ÊMESE"
+            - "Suador" -> "SUDORESE PROFUSA"
+            - "Pele amarela" -> "ICTERÍCIA"
+            - "Sangramento no nariz" -> "EPISTAXE"
+            - "Pressão alta" -> "HIPERTENSÃO"
+            - "Batimento acelerado" -> "TAQUICARDIA"
+            - "Urina com sangue" -> "HEMATÚRIA"
+
+            REGRAS OBRIGATÓRIAS:
+            1. REESCREVA O TEXTO EM FORMATO DE ANOTAÇÃO DE ENFERMAGEM CLARA, COESA, OBJETIVA E TÉCNICA.
+            2. NÃO INCLUA EXPLICAÇÕES, CUMPRIMENTOS, AVISOS OU INTRODUÇÕES COMO "AQUI ESTÁ A TRADUÇÃO".
+            3. RETORNE DIRETAMENTE O TEXTO TÉCNICO PRONTO PARA SER COPIADO PARA O PRONTUÁRIO DO PACIENTE.
+            4. NÃO USE MARKDOWN (NÃO USE ASTERISCOS ** PARA NEGRITO, NÃO USE TRAÇOS DE LISTA A MENOS QUE NECESSÁRIO).
+            5. FORMATE ABSOLUTAMENTE TODA A SUA RESPOSTA EM LETRAS MAIÚSCULAS.`;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: inputText }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            let success = false;
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    let translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NENHUM RESULTADO ENCONTRADO.";
+                    
+                    // Remove possíveis marcações markdown
+                    translatedText = translatedText.replace(/\*\*/g, '').replace(/\*/g, '');
+
+                    // Mostra o resultado em maiúsculo
+                    outputEl.value = translatedText.toUpperCase();
+                    outputEl.classList.remove('text-slate-300');
+                    outputEl.classList.add('shadow-inner', 'text-slate-800');
+                    
+                    // Mostra o botão de copiar
+                    copyBtn.classList.remove('hidden-element');
+                    copyBtn.classList.add('flex');
+                    
+                    success = true;
+                    break;
+                    
+                } catch (err) {
+                    if (i === 4) {
+                        errorText.innerText = "OCORREU UM ERRO AO CONECTAR COM A INTELIGÊNCIA ARTIFICIAL. POR FAVOR, TENTE NOVAMENTE.";
+                        errorContainer.classList.remove('hidden-element');
+                        console.error(err);
+                    } else {
+                        await new Promise(r => setTimeout(r, delays[i]));
+                    }
+                }
+            }
+            
+            // Restaura estado inicial de UI pós carregamento
+            inputEl.disabled = false;
+            translateBtn.disabled = false;
+            translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
+            translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+            
+            btnText.innerText = 'TRADUZIR PARA TERMO TÉCNICO';
+            btnSpinner.classList.add('hidden-element');
+            btnArrow.classList.remove('hidden-element');
+            loadingOverlay.classList.add('hidden-element');
+        });
+
+        // Evento do Botão Copiar
+        copyBtn.addEventListener('click', () => {
+            if (!outputEl.value) return;
+
+            // Seleciona e copia o texto
+            outputEl.select();
+            outputEl.setSelectionRange(0, 99999); // Para dispositivos móveis
+
+            try {
+                document.execCommand('copy');
+                
+                // Animação visual de sucesso ao copiar
+                copyBtn.classList.remove('bg-white', 'text-teal-700', 'hover:bg-teal-100');
+                copyBtn.classList.add('bg-teal-600', 'text-white');
+                copyIconRegular.classList.add('hidden-element');
+                copyIconCheck.classList.remove('hidden-element');
+                copyTextLabel.innerText = 'COPIADO!';
+
+                // Retorna ao normal após 2 segundos
+                setTimeout(() => {
+                    copyBtn.classList.add('bg-white', 'text-teal-700', 'hover:bg-teal-100');
+                    copyBtn.classList.remove('bg-teal-600', 'text-white');
+                    copyIconRegular.classList.remove('hidden-element');
+                    copyIconCheck.classList.add('hidden-element');
+                    copyTextLabel.innerText = 'COPIAR';
+                    
+                    // Tira a seleção do texto
+                    window.getSelection().removeAllRanges();
+                }, 2000);
+
+            } catch (err) {
+                console.error('Falha ao copiar texto', err);
+            }
+        });
+    </script>
+</body>
+</html>
