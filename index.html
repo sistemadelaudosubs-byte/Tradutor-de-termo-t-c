@@ -114,8 +114,10 @@
         // Inicializa os ícones do Lucide
         lucide.createIcons();
 
-        // Chave da API diretamente no script para o GitHub Pages
-        const apiKey = "AIzaSyB_dXyluIU5N4ISI6Fn3366vTFgeq-iQqE"; 
+        // ATENÇÃO: Para rodar neste ambiente de visualização, a chave deve ficar VAZIA ("").
+        // O ambiente injeta a chave correta automaticamente nos bastidores.
+        // QUANDO FOR SUBIR PARA O GITHUB: Troque "" pela sua chave "AIzaSy..."
+        const apiKey = ""; 
 
         // Elementos do DOM
         const inputEl = document.getElementById('symptoms-input');
@@ -137,12 +139,13 @@
         const copyIconCheck = document.getElementById('copy-icon-check');
         const copyTextLabel = document.getElementById('copy-text');
 
-        // Evento de digitação: Força maiúsculo e habilita/desabilita botão
+        // Guarda a posição do cursor para não pular durante a digitação
         inputEl.addEventListener('input', (e) => {
-            // Força a caixa alta
+            const start = e.target.selectionStart;
+            const end = e.target.selectionEnd;
             e.target.value = e.target.value.toUpperCase();
+            e.target.setSelectionRange(start, end);
             
-            // Valida se há texto para ativar o botão
             if (e.target.value.trim().length > 0) {
                 translateBtn.disabled = false;
                 translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
@@ -154,7 +157,6 @@
             }
         });
 
-        // Evento do botão Limpar
         clearBtn.addEventListener('click', () => {
             inputEl.value = '';
             outputEl.value = '';
@@ -163,17 +165,13 @@
             errorContainer.classList.add('hidden-element');
             copyBtn.classList.add('hidden-element');
             copyBtn.classList.remove('flex');
-            
-            // Dispara manualmente o evento input para desativar o botão traduzir
             inputEl.dispatchEvent(new Event('input'));
         });
 
-        // Evento do botão Traduzir (Lógica de Inteligência Artificial)
         translateBtn.addEventListener('click', async () => {
             const inputText = inputEl.value.trim();
             if (!inputText) return;
 
-            // Ativa estado de carregamento
             inputEl.disabled = true;
             translateBtn.disabled = true;
             translateBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
@@ -212,6 +210,8 @@
             4. NÃO USE MARKDOWN (NÃO USE ASTERISCOS ** PARA NEGRITO, NÃO USE TRAÇOS DE LISTA A MENOS QUE NECESSÁRIO).
             5. FORMATE ABSOLUTAMENTE TODA A SUA RESPOSTA EM LETRAS MAIÚSCULAS.`;
 
+            // ATENÇÃO: URL atualizada para rodar neste ambiente. 
+            // QUANDO FOR SUBIR PARA O GITHUB: Troque "gemini-2.5-flash-preview-09-2025" por "gemini-1.5-flash"
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             
             const payload = {
@@ -219,51 +219,40 @@
                 systemInstruction: { parts: [{ text: systemPrompt }] }
             };
 
-            const delays = [1000, 2000, 4000, 8000, 16000];
             let success = false;
 
-            for (let i = 0; i < 5; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    let translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NENHUM RESULTADO ENCONTRADO.";
-                    
-                    // Remove possíveis marcações markdown
-                    translatedText = translatedText.replace(/\*\*/g, '').replace(/\*/g, '');
-
-                    // Mostra o resultado em maiúsculo
-                    outputEl.value = translatedText.toUpperCase();
-                    outputEl.classList.remove('text-slate-300');
-                    outputEl.classList.add('shadow-inner', 'text-slate-800');
-                    
-                    // Mostra o botão de copiar
-                    copyBtn.classList.remove('hidden-element');
-                    copyBtn.classList.add('flex');
-                    
-                    success = true;
-                    break;
-                    
-                } catch (err) {
-                    if (i === 4) {
-                        errorText.innerText = "OCORREU UM ERRO AO CONECTAR COM A INTELIGÊNCIA ARTIFICIAL. POR FAVOR, TENTE NOVAMENTE.";
-                        errorContainer.classList.remove('hidden-element');
-                        console.error(err);
-                    } else {
-                        await new Promise(r => setTimeout(r, delays[i]));
-                    }
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
                 }
+
+                const data = await response.json();
+                let translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NENHUM RESULTADO ENCONTRADO.";
+                
+                translatedText = translatedText.replace(/\*\*/g, '').replace(/\*/g, '');
+
+                outputEl.value = translatedText.toUpperCase();
+                outputEl.classList.remove('text-slate-300');
+                outputEl.classList.add('shadow-inner', 'text-slate-800');
+                
+                copyBtn.classList.remove('hidden-element');
+                copyBtn.classList.add('flex');
+                
+                success = true;
+                
+            } catch (err) {
+                errorText.innerText = "ERRO DE CONEXÃO: " + err.message + ". VERIFIQUE SE SUA CHAVE DE API ESTÁ CORRETA.";
+                errorContainer.classList.remove('hidden-element');
+                console.error(err);
             }
             
-            // Restaura estado inicial de UI pós carregamento
             inputEl.disabled = false;
             translateBtn.disabled = false;
             translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
@@ -275,33 +264,27 @@
             loadingOverlay.classList.add('hidden-element');
         });
 
-        // Evento do Botão Copiar
         copyBtn.addEventListener('click', () => {
             if (!outputEl.value) return;
 
-            // Seleciona e copia o texto
             outputEl.select();
-            outputEl.setSelectionRange(0, 99999); // Para dispositivos móveis
+            outputEl.setSelectionRange(0, 99999); 
 
             try {
                 document.execCommand('copy');
                 
-                // Animação visual de sucesso ao copiar
                 copyBtn.classList.remove('bg-white', 'text-teal-700', 'hover:bg-teal-100');
                 copyBtn.classList.add('bg-teal-600', 'text-white');
                 copyIconRegular.classList.add('hidden-element');
                 copyIconCheck.classList.remove('hidden-element');
                 copyTextLabel.innerText = 'COPIADO!';
 
-                // Retorna ao normal após 2 segundos
                 setTimeout(() => {
                     copyBtn.classList.add('bg-white', 'text-teal-700', 'hover:bg-teal-100');
                     copyBtn.classList.remove('bg-teal-600', 'text-white');
                     copyIconRegular.classList.remove('hidden-element');
                     copyIconCheck.classList.add('hidden-element');
                     copyTextLabel.innerText = 'COPIAR';
-                    
-                    // Tira a seleção do texto
                     window.getSelection().removeAllRanges();
                 }, 2000);
 
