@@ -114,10 +114,12 @@
         // Inicializa os ícones do Lucide
         lucide.createIcons();
 
-        // ATENÇÃO: Para rodar neste ambiente de visualização, a chave deve ficar VAZIA ("").
-        // O ambiente injeta a chave correta automaticamente nos bastidores.
-        // QUANDO FOR SUBIR PARA O GITHUB: Troque "" pela sua chave "AIzaSy..."
-        const apiKey = ""; 
+        // ATENÇÃO: O ambiente de teste exige que a variável inicie vazia.
+        let apiKey = ""; 
+        // Se estiver rodando no GitHub Pages, usamos a sua chave real automaticamente!
+        if (window.location.hostname.includes("github.io")) {
+            apiKey = "AIzaSyB_dXyluIU5N4ISI6Fn3366vTFgeq-iQqE";
+        }
 
         // Elementos do DOM
         const inputEl = document.getElementById('symptoms-input');
@@ -210,9 +212,12 @@
             4. NÃO USE MARKDOWN (NÃO USE ASTERISCOS ** PARA NEGRITO, NÃO USE TRAÇOS DE LISTA A MENOS QUE NECESSÁRIO).
             5. FORMATE ABSOLUTAMENTE TODA A SUA RESPOSTA EM LETRAS MAIÚSCULAS.`;
 
-            // ATENÇÃO: URL atualizada para rodar neste ambiente. 
-            // QUANDO FOR SUBIR PARA O GITHUB: Troque "gemini-2.5-flash-preview-09-2025" por "gemini-1.5-flash"
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // Detecta qual modelo usar (público no GitHub, testes no Canvas)
+            let modelName = "gemini-2.5-flash-preview-09-2025";
+            if (window.location.hostname.includes("github.io")) {
+                modelName = "gemini-1.5-flash";
+            }
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
             
             const payload = {
                 contents: [{ parts: [{ text: inputText }] }],
