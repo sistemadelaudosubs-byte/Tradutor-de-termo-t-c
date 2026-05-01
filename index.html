@@ -60,7 +60,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
                 <div class="bg-slate-100/50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
                     <h2 class="font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 text-sm sm:text-base">
-                        Relato do Paciente
+                        Relato e Medicações
                     </h2>
                     <button id="clear-btn" class="text-slate-400 hover:text-teal-600 transition-colors flex items-center gap-1 text-[10px] font-bold uppercase">
                         <i data-lucide="refresh-cw" class="w-3 h-3"></i> Limpar
@@ -69,8 +69,8 @@
                 <div class="p-4 md:p-6 flex-grow flex flex-col">
                     <textarea
                         id="symptoms-input"
-                        class="w-full h-48 md:h-80 p-3 md:p-4 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none force-uppercase text-base md:text-lg text-slate-700 placeholder:text-slate-400 font-medium"
-                        placeholder="EX: PACIENTE RECLAMA DE DOR DE CABEÇA FORTE, ESTÁ QUENTE E COM VONTADE DE VOMITAR..."
+                        class="w-full h-48 md:h-80 p-3 md:p-4 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none force-uppercase text-base md:text-lg text-slate-700 placeholder:text-slate-400 font-medium leading-relaxed"
+                        placeholder="EX: PACIENTE COM DOR DE CABEÇA FORTE E VONTADE DE VOMITAR. DEI DIPIRONA NA VEIA E PLASIL NO MÚSCULO CONFORME RECEITA..."
                     ></textarea>
                     
                     <button
@@ -89,7 +89,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
                 <div class="bg-teal-50 border-b border-teal-100 px-6 py-4 flex justify-between items-center">
                     <h2 class="font-bold text-teal-800 uppercase tracking-wide flex items-center gap-2 text-sm sm:text-base">
-                        Evolução Técnica
+                        Evolução de Enfermagem
                     </h2>
                     
                     <button id="copy-btn" class="hidden-element items-center gap-1 text-[10px] font-bold uppercase transition-colors px-3 py-1.5 rounded-md bg-white border border-teal-200 text-teal-700 hover:bg-teal-100">
@@ -116,8 +116,8 @@
                         <textarea
                             id="technical-output"
                             readonly
-                            class="w-full h-full min-h-[12rem] md:min-h-[16rem] p-3 md:p-4 bg-white border border-slate-200 rounded-lg resize-none force-uppercase text-base md:text-lg text-slate-800 font-semibold focus:outline-none text-slate-300 items-center justify-center"
-                            placeholder="A TRADUÇÃO TÉCNICA APARECERÁ AQUI..."
+                            class="w-full h-full min-h-[12rem] md:min-h-[16rem] p-3 md:p-4 bg-white border border-slate-200 rounded-lg resize-none force-uppercase text-base md:text-lg text-slate-800 font-semibold focus:outline-none text-slate-300 items-center justify-center leading-relaxed"
+                            placeholder="A ANOTAÇÃO TÉCNICA E A ADMINISTRAÇÃO DE MEDICAMENTOS APARECERÃO AQUI..."
                         ></textarea>
                         
                         <!-- Overlay de Carregamento -->
@@ -256,17 +256,23 @@
                 loadingText.innerText = 'GERANDO TRADUÇÃO...';
                 btnText.innerText = 'TRADUZINDO...';
 
-                const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR. REESCREVA O RELATO RECEBIDO EM TERMOS TÉCNICOS DE ENFERMAGEM (PADRÃO MS).
-                REGRAS:
-                1. RETORNE APENAS O TEXTO TÉCNICO.
-                2. SEM EXPLICAÇÕES OU MARKDOWN.
-                3. TUDO EM LETRAS MAIÚSCULAS.`;
+                // Prompt atualizado para lidar tanto com sintomas quanto com medicações
+                const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR. SUA TAREFA É REESCREVER O TEXTO RECEBIDO EM UMA ANOTAÇÃO DE ENFERMAGEM TÉCNICA E PADRONIZADA (PADRÃO DO MINISTÉRIO DA SAÚDE).
+
+                DIRETRIZES:
+                - SINTOMAS/QUEIXAS: Traduza jargões para termos técnicos (ex: "dor de cabeça" -> CEFALEIA, "vontade de vomitar" -> NÁUSEA, "pressão alta" -> HIPERTENSÃO).
+                - MEDICAMENTOS: Padronize os termos de administração e vias (ex: "dei na veia" -> ADMINISTRADO VIA ENDOVENOSA / EV, "no músculo" -> VIA INTRAMUSCULAR / IM, "pela boca" -> VIA ORAL / VO).
+                
+                REGRAS OBRIGATÓRIAS:
+                1. RETORNE APENAS A ANOTAÇÃO TÉCNICA COMPLETA, COESA E PRONTA PARA O PRONTUÁRIO.
+                2. NÃO INCLUA SAUDAÇÕES, EXPLICAÇÕES OU FORMATOS MARKDOWN (NENHUM ASTERISCO).
+                3. FORMATE ABSOLUTAMENTE TUDO EM LETRAS MAIÚSCULAS.`;
 
                 const payload = {
                     contents: [
                         { 
                             role: "user", 
-                            parts: [{ text: `INSTRUÇÃO: ${systemPrompt}\n\nRELATO DO PACIENTE: ${inputText}` }] 
+                            parts: [{ text: `INSTRUÇÃO: ${systemPrompt}\n\nANOTAÇÃO ORIGINAL: ${inputText}` }] 
                         }
                     ]
                 };
