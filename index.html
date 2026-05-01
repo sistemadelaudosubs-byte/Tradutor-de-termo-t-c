@@ -215,7 +215,8 @@
             // Detecta qual modelo usar (público no GitHub, testes no Canvas)
             let modelName = "gemini-2.5-flash-preview-09-2025";
             if (window.location.hostname.includes("github.io")) {
-                modelName = "gemini-1.5-flash";
+                // Alterado para a versão "latest" para evitar o erro de modelo não encontrado
+                modelName = "gemini-1.5-flash-latest";
             }
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
             
