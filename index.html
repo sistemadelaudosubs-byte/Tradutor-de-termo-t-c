@@ -201,13 +201,12 @@
             4. FORMATE ABSOLUTAMENTE TODA A SUA RESPOSTA EM LETRAS MAIÚSCULAS.`;
 
             // CONFIGURAÇÃO DE URL E MODELO
-            let apiVersion = "v1beta";
-            let modelName = "gemini-2.5-flash-preview-09-2025"; // Modelo para este ambiente (Canvas)
+            // Mudamos para v1beta em todos os casos, pois ela é a versão que suporta systemInstruction de forma estável.
+            const apiVersion = "v1beta"; 
+            let modelName = "gemini-2.5-flash-preview-09-2025"; // Modelo para o Canvas
 
-            // Se estiver no GitHub, usa a versão Estável (v1) e o modelo padrão (gemini-1.5-flash)
             if (window.location.hostname.includes("github.io")) {
-                apiVersion = "v1";
-                modelName = "gemini-1.5-flash";
+                modelName = "gemini-1.5-flash"; // Modelo para o GitHub
             }
 
             const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
@@ -267,7 +266,6 @@
             outputEl.setSelectionRange(0, 99999); 
 
             try {
-                // Tenta usar a API de clipboard moderna ou fallback para execCommand
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(outputEl.value);
                 } else {
