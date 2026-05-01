@@ -1,218 +1,303 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnferIA - Termos Técnicos</title>
+    <!-- Tailwind CSS (CDN para não precisar instalar nada) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Estilos adicionais mínimos para garantir que as caixas de texto fiquem perfeitas */
+        textarea { outline: none; }
+        .hidden-element { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-200">
 
-import React, { useState, useRef } from 'react';
-import { 
-  Stethoscope, 
-  RefreshCw, 
-  ArrowRight, 
-  Copy, 
-  CheckCircle2, 
-  AlertCircle,
-  FileText
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI } from '@google/genai';
-
-// System Prompt para Tradução Médica e Medicamentosa
-const SYSTEM_PROMPT = `VOCÊ É UM ENFERMEIRO AUDITOR E ASSISTENTE ESPECIALISTA EM PRONTUÁRIO ELETRÔNICO. 
-SUA FUNÇÃO É RECEBER UM RELATO LEIGO (SINTOMAS OU ADMINISTRAÇÃO DE MEDICAMENTOS) E REESCREVÊ-LO COMO UMA ANOTAÇÃO DE ENFERMAGEM PROFISSIONAL PADRONIZADA PELO MINISTÉRIO DA SAÚDE DO BRASIL.
-
---- 1. PARA SINTOMAS E RELATOS (EXEMPLOS): ---
-- "Dor de cabeça" -> "CEFALEIA"
-- "Falta de ar" -> "DISPNEIA"
-- "Vontade de vomitar" -> "NÁUSEA"
-- "Vômito" -> "ÊMESE"
-- "Suador" -> "SUDORESE PROFUSA"
-- "Pele amarela" -> "ICTERÍCIA"
-- "Sangramento no nariz" -> "EPISTAXE"
-
---- 2. PARA ADMINISTRAÇÃO DE MEDICAMENTOS (EXEMPLOS): ---
-Mapeie as vias e frequências corretamente:
-- "Pela boca" ou "Tomar" -> "VO (VIA ORAL)"
-- "Na veia" -> "EV (ENDOVENOSA)"
-- "No músculo" -> "IM (INTRAMUSCULAR)"
-- "Debixo da língua" -> "SL (SUBLINGUAL)"
-- "Na pele" -> "TOP (TÓPICA)"
-- "De 8 em 8 horas" -> "8/8H"
-- "De 12 em 12 horas" -> "12/12H"
-- "Uma vez ao dia" -> "QD" ou "1X/DIA"
-- "Se tiver dor" ou "Se precisar" -> "SOS"
-
-EXEMPLO DE ADMINISTRAÇÃO: 
-"Dar dipirona na veia de 6 em 6 horas se tiver febre" -> "ADMINISTRAÇÃO DE DIPIRONA EV, 6/6H, SOS (EM CASO DE FEBRE)."
-
-REGRAS OBRIGATÓRIAS:
-1. REESCREVA EM FORMATO DE ANOTAÇÃO TÉCNICA OBJETIVA.
-2. NÃO INCLUA EXPLICAÇÕES OU INTRODUÇÕES.
-3. RETORNE APENAS O TEXTO TÉCNICO PRONTO PARA COPIAR.
-4. SEMPRE FORMATE EM LETRAS MAIÚSCULAS E SEM MARKDOWN.`;
-
-// Inicializa a API do Gemini
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-
-export default function App() {
-  const [inputText, setInputText] = useState('');
-  const [outputText, setOutputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isCopied, setIsCopied] = useState(false);
-  
-  const outputRef = useRef<HTMLTextAreaElement>(null);
-
-  const handleTranslate = async () => {
-    if (!inputText.trim()) return;
-
-    setIsLoading(true);
-    setError(null);
-    setOutputText('');
-    setIsCopied(false);
-
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: inputText,
-        config: {
-          systemInstruction: SYSTEM_PROMPT
-        }
-      });
-      
-      let text = response.text || "NENHUM RESULTADO ENCONTRADO.";
-      text = text.replace(/\*\*/g, '').replace(/\*/g, '').trim().toUpperCase();
-      
-      setOutputText(text);
-    } catch (err: any) {
-      console.error('Translation error:', err);
-      setError(`ERRO DE CONEXÃO: ${err.message || 'FALHA AO CONSULTAR DIRETRIZES'}.`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClear = () => {
-    setInputText('');
-    setOutputText('');
-    setError(null);
-    setIsCopied(false);
-  };
-
-  const handleCopy = async () => {
-    if (!outputText) return;
-    try {
-      await navigator.clipboard.writeText(outputText);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error('Copy failed:', err);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-200">
-      <header className="bg-teal-700 text-white shadow-md">
-        <div className="container mx-auto px-4 py-6 max-w-5xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <Stethoscope className="text-teal-50 w-8 h-8" />
+    <!-- Header -->
+    <header class="bg-teal-700 text-white shadow-md">
+        <div class="container mx-auto px-4 py-6 max-w-5xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-lg">
+                    <i data-lucide="stethoscope" class="text-teal-50 w-8 h-8"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide uppercase">EnferIA Termos Técnicos</h1>
+                    <p class="text-teal-100 text-sm font-medium uppercase tracking-wider">Padrão Ministério da Saúde</p>
+                </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-wide uppercase">EnferIA Termos Técnicos</h1>
-              <p className="text-teal-100 text-sm font-medium uppercase tracking-wider">Sintomas & Administração de Medicamentos</p>
-            </div>
-          </div>
         </div>
-      </header>
+    </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-          
-          {/* Painel Esquerdo: Input */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[400px]">
-            <div className="bg-slate-100/50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-              <h2 className="font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                <FileText className="w-4 h-4" /> Relato ou Prescrição
-              </h2>
-              <button 
-                onClick={handleClear}
-                className="text-slate-400 hover:text-teal-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Limpar
-              </button>
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 max-w-5xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            
+            <!-- Painel Esquerdo: Input Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                <div class="bg-slate-100/50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                    <h2 class="font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                        Relato do Paciente
+                    </h2>
+                    <button id="clear-btn" class="text-slate-400 hover:text-teal-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase" title="LIMPAR DADOS">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Limpar
+                    </button>
+                </div>
+                <div class="p-4 md:p-6 flex-grow flex flex-col">
+                    <label for="symptoms-input" class="sr-only">Sintomas (Termo Leigo)</label>
+                    <textarea
+                        id="symptoms-input"
+                        class="w-full h-48 md:h-80 p-3 md:p-4 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none uppercase text-base md:text-lg text-slate-700 placeholder:text-slate-400 font-medium"
+                        placeholder="EX: PACIENTE RECLAMA DE DOR DE CABEÇA FORTE, ESTÁ QUENTE E COM VONTADE DE VOMITAR..."
+                    ></textarea>
+                    
+                    <button
+                        id="translate-btn"
+                        disabled
+                        class="mt-4 w-full py-4 px-6 rounded-lg font-bold text-white tracking-wider uppercase flex items-center justify-center gap-2 transition-all bg-slate-300 cursor-not-allowed"
+                    >
+                        <i data-lucide="refresh-cw" id="btn-spinner" class="w-5 h-5 animate-spin hidden-element"></i>
+                        <span id="btn-text">TRADUZIR PARA TERMO TÉCNICO</span>
+                        <i data-lucide="arrow-right" id="btn-arrow" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
-            <div className="p-4 md:p-6 flex-grow flex flex-col">
-              <textarea
-                className="w-full flex-grow p-3 md:p-4 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none uppercase text-base md:text-lg text-slate-700 placeholder:text-slate-400 font-medium"
-                placeholder="EX: PACIENTE COM DOR AO URINAR... OU: DAR DIPIRONA NA VEIA AGORA..."
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value.toUpperCase())}
-                disabled={isLoading}
-              ></textarea>
-              
-              <button
-                onClick={handleTranslate}
-                disabled={!inputText.trim() || isLoading}
-                className={`mt-4 w-full py-4 px-6 rounded-lg font-bold text-white tracking-wider uppercase flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] ${
-                  !inputText.trim() || isLoading ? 'bg-slate-300 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700'
-                }`}
-              >
-                {isLoading ? (
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                ) : (
-                  <><span>TRADUZIR PARA TERMO TÉCNICO</span><ArrowRight className="w-5 h-5" /></>
-                )}
-              </button>
-            </div>
-          </div>
 
-          {/* Painel Direito: Output */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[400px]">
-            <div className="bg-teal-50 border-b border-teal-100 px-6 py-4 flex justify-between items-center">
-              <h2 className="font-bold text-teal-800 uppercase tracking-wide">Evolução Técnica</h2>
-              <AnimatePresence>
-                {outputText && !isLoading && (
-                  <motion.button 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    onClick={handleCopy}
-                    className={`flex items-center gap-1 text-xs font-bold uppercase px-3 py-1.5 rounded-md border ${
-                      isCopied ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-teal-700 border-teal-200 hover:bg-teal-100'
-                    }`}
-                  >
-                    {isCopied ? <><CheckCircle2 className="w-3.5 h-3.5" /> COPIADO!</> : <><Copy className="w-3.5 h-3.5" /> COPIAR</>}
-                  </motion.button>
-                )}
-              </AnimatePresence>
+            <!-- Painel Direito: Output Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                <div class="bg-teal-50 border-b border-teal-100 px-6 py-4 flex justify-between items-center">
+                    <h2 class="font-bold text-teal-800 uppercase tracking-wide flex items-center gap-2">
+                        Evolução / Termo Técnico
+                    </h2>
+                    
+                    <button id="copy-btn" class="hidden-element items-center gap-1 text-xs font-bold uppercase transition-colors px-3 py-1.5 rounded-md bg-white border border-teal-200 text-teal-700 hover:bg-teal-100">
+                        <i data-lucide="copy" id="copy-icon-regular" class="w-3.5 h-3.5"></i>
+                        <i data-lucide="check-circle-2" id="copy-icon-check" class="w-3.5 h-3.5 hidden-element"></i>
+                        <span id="copy-text" class="hidden sm:inline">COPIAR</span>
+                    </button>
+                    
+                </div>
+                
+                <div class="p-4 md:p-6 flex-grow flex flex-col">
+                    <!-- Mensagem de Erro -->
+                    <div id="error-container" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700 hidden-element">
+                        <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                        <p id="error-text" class="text-sm font-bold uppercase leading-relaxed"></p>
+                    </div>
+
+                    <div class="relative flex-grow">
+                        <textarea
+                            id="technical-output"
+                            readonly
+                            class="w-full h-full min-h-[12rem] md:min-h-[16rem] p-3 md:p-4 bg-white border border-slate-200 rounded-lg resize-none uppercase text-base md:text-lg text-slate-800 font-semibold focus:outline-none text-slate-300 items-center justify-center"
+                            placeholder="A TRADUÇÃO TÉCNICA APARECERÁ AQUI..."
+                        ></textarea>
+                        
+                        <!-- Overlay de Carregamento -->
+                        <div id="loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center border border-slate-200 hidden-element">
+                            <div class="flex flex-col items-center gap-3 text-teal-600">
+                                <i data-lucide="refresh-cw" class="w-8 h-8 animate-spin"></i>
+                                <span class="font-bold tracking-widest uppercase text-sm">CONSULTANDO DIRETRIZES...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div className="p-4 md:p-6 flex-grow flex flex-col relative">
-              {error && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-sm font-bold uppercase">{error}</p>
-                </div>
-              )}
-              <textarea
-                readOnly
-                className={`w-full flex-grow p-3 md:p-4 bg-white border border-slate-200 rounded-lg resize-none uppercase text-base md:text-lg font-semibold focus:outline-none transition-colors ${
-                  !outputText ? 'text-slate-300' : 'text-slate-800 bg-teal-50/10'
-                }`}
-                placeholder={isLoading ? "" : "A TRADUÇÃO TÉCNICA APARECERÁ AQUI..."}
-                value={outputText}
-              ></textarea>
-              
-              {isLoading && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center border border-slate-200">
-                  <div className="flex flex-col items-center gap-3 text-teal-600">
-                    <RefreshCw className="w-8 h-8 animate-spin" />
-                    <span className="font-bold uppercase text-sm">CONSULTANDO DIRETRIZES...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
-      </main>
-    </div>
-  );
-}
+    </main>
+
+    <!-- JavaScript para gerenciar a lógica -->
+    <script>
+        // Inicializa os ícones do Lucide
+        lucide.createIcons();
+
+        // ATENÇÃO: O ambiente de teste exige que a variável inicie vazia.
+        let apiKey = ""; 
+        // Se estiver rodando no GitHub Pages, usamos a sua chave real automaticamente!
+        if (window.location.hostname.includes("github.io")) {
+            apiKey = "AIzaSyB_dXyluIU5N4ISI6Fn3366vTFgeq-iQqE";
+        }
+
+        // Elementos do DOM
+        const inputEl = document.getElementById('symptoms-input');
+        const outputEl = document.getElementById('technical-output');
+        const translateBtn = document.getElementById('translate-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const errorContainer = document.getElementById('error-container');
+        const errorText = document.getElementById('error-text');
+
+        // Elementos internos do botão Traduzir
+        const btnText = document.getElementById('btn-text');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const btnArrow = document.getElementById('btn-arrow');
+
+        // Elementos internos do botão Copiar
+        const copyIconRegular = document.getElementById('copy-icon-regular');
+        const copyIconCheck = document.getElementById('copy-icon-check');
+        const copyTextLabel = document.getElementById('copy-text');
+
+        // Guarda a posição do cursor para não pular durante a digitação
+        inputEl.addEventListener('input', (e) => {
+            const start = e.target.selectionStart;
+            const end = e.target.selectionEnd;
+            e.target.value = e.target.value.toUpperCase();
+            e.target.setSelectionRange(start, end);
+            
+            if (e.target.value.trim().length > 0) {
+                translateBtn.disabled = false;
+                translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
+                translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+            } else {
+                translateBtn.disabled = true;
+                translateBtn.classList.add('bg-slate-300', 'cursor-not-allowed');
+                translateBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            inputEl.value = '';
+            outputEl.value = '';
+            outputEl.classList.add('text-slate-300');
+            outputEl.classList.remove('shadow-inner', 'text-slate-800');
+            errorContainer.classList.add('hidden-element');
+            copyBtn.classList.add('hidden-element');
+            copyBtn.classList.remove('flex');
+            inputEl.dispatchEvent(new Event('input'));
+        });
+
+        translateBtn.addEventListener('click', async () => {
+            const inputText = inputEl.value.trim();
+            if (!inputText) return;
+
+            inputEl.disabled = true;
+            translateBtn.disabled = true;
+            translateBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+            translateBtn.classList.add('bg-slate-300', 'cursor-not-allowed');
+            
+            btnText.innerText = 'PROCESSANDO TRADUÇÃO...';
+            btnSpinner.classList.remove('hidden-element');
+            btnArrow.classList.add('hidden-element');
+            
+            loadingOverlay.classList.remove('hidden-element');
+            errorContainer.classList.add('hidden-element');
+            outputEl.value = '';
+            copyBtn.classList.add('hidden-element');
+            copyBtn.classList.remove('flex');
+
+            const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR E ASSISTENTE ESPECIALISTA. 
+            SUA FUNÇÃO É RECEBER UM RELATO LEIGO E REESCREVÊ-LO COMO UMA ANOTAÇÃO/EVOLUÇÃO DE ENFERMAGEM PROFISSIONAL, 
+            UTILIZANDO ESTRITAMENTE A TERMINOLOGIA TÉCNICA E MÉDICA CORRETA SEGUNDO AS DIRETRIZES DO MINISTÉRIO DA SAÚDE DO BRASIL.
+
+            EXEMPLOS DE TRADUÇÃO (DE LEIGO PARA TÉCNICO):
+            - "Dor de cabeça" -> "CEFALEIA"
+            - "Falta de ar" -> "DISPNEIA"
+            - "Vontade de vomitar" -> "NÁUSEA"
+            - "Vômito" -> "ÊMESE"
+            - "Suador" -> "SUDORESE PROFUSA"
+            - "Pele amarela" -> "ICTERÍCIA"
+            - "Sangramento no nariz" -> "EPISTAXE"
+            - "Pressão alta" -> "HIPERTENSÃO"
+            - "Batimento acelerado" -> "TAQUICARDIA"
+            - "Urina com sangue" -> "HEMATÚRIA"
+
+            REGRAS OBRIGATÓRIAS:
+            1. REESCREVA O TEXTO EM FORMATO DE ANOTAÇÃO DE ENFERMAGEM CLARA, COESA, OBJETIVA E TÉCNICA.
+            2. NÃO INCLUA EXPLICAÇÕES, CUMPRIMENTOS, AVISOS OU INTRODUÇÕES COMO "AQUI ESTÁ A TRADUÇÃO".
+            3. RETORNE DIRETAMENTE O TEXTO TÉCNICO PRONTO PARA SER COPIADO PARA O PRONTUÁRIO DO PACIENTE.
+            4. NÃO USE MARKDOWN (NÃO USE ASTERISCOS ** PARA NEGRITO, NÃO USE TRAÇOS DE LISTA A MENOS QUE NECESSÁRIO).
+            5. FORMATE ABSOLUTAMENTE TODA A SUA RESPOSTA EM LETRAS MAIÚSCULAS.`;
+
+            // Detecta qual modelo usar (público no GitHub, testes no Canvas)
+            let modelName = "gemini-2.5-flash-preview-09-2025";
+            if (window.location.hostname.includes("github.io")) {
+                // Alterado para a versão "latest" para evitar o erro de modelo não encontrado
+                modelName = "gemini-1.5-flash-latest";
+            }
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: inputText }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            let success = false;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                let translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NENHUM RESULTADO ENCONTRADO.";
+                
+                translatedText = translatedText.replace(/\*\*/g, '').replace(/\*/g, '');
+
+                outputEl.value = translatedText.toUpperCase();
+                outputEl.classList.remove('text-slate-300');
+                outputEl.classList.add('shadow-inner', 'text-slate-800');
+                
+                copyBtn.classList.remove('hidden-element');
+                copyBtn.classList.add('flex');
+                
+                success = true;
+                
+            } catch (err) {
+                errorText.innerText = "ERRO DE CONEXÃO: " + err.message + ". VERIFIQUE SE SUA CHAVE DE API ESTÁ CORRETA.";
+                errorContainer.classList.remove('hidden-element');
+                console.error(err);
+            }
+            
+            inputEl.disabled = false;
+            translateBtn.disabled = false;
+            translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
+            translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+            
+            btnText.innerText = 'TRADUZIR PARA TERMO TÉCNICO';
+            btnSpinner.classList.add('hidden-element');
+            btnArrow.classList.remove('hidden-element');
+            loadingOverlay.classList.add('hidden-element');
+        });
+
+        copyBtn.addEventListener('click', () => {
+            if (!outputEl.value) return;
+
+            outputEl.select();
+            outputEl.setSelectionRange(0, 99999); 
+
+            try {
+                document.execCommand('copy');
+                
+                copyBtn.classList.remove('bg-white', 'text-teal-700', 'hover:bg-teal-100');
+                copyBtn.classList.add('bg-teal-600', 'text-white');
+                copyIconRegular.classList.add('hidden-element');
+                copyIconCheck.classList.remove('hidden-element');
+                copyTextLabel.innerText = 'COPIADO!';
+
+                setTimeout(() => {
+                    copyBtn.classList.add('bg-white', 'text-teal-700', 'hover:bg-teal-100');
+                    copyBtn.classList.remove('bg-teal-600', 'text-white');
+                    copyIconRegular.classList.remove('hidden-element');
+                    copyIconCheck.classList.add('hidden-element');
+                    copyTextLabel.innerText = 'COPIAR';
+                    window.getSelection().removeAllRanges();
+                }, 2000);
+
+            } catch (err) {
+                console.error('Falha ao copiar texto', err);
+            }
+        });
+    </script>
+</body>
+</html>
