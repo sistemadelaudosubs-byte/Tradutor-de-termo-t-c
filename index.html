@@ -124,7 +124,7 @@
                         <div id="loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center border border-slate-200 hidden-element">
                             <div class="flex flex-col items-center gap-3 text-teal-600">
                                 <i data-lucide="refresh-cw" class="w-8 h-8 animate-spin"></i>
-                                <span class="font-bold tracking-widest uppercase text-[10px]">CONSULTANDO IA...</span>
+                                <span id="loading-text" class="font-bold tracking-widest uppercase text-[10px]">CONSULTANDO IA...</span>
                             </div>
                         </div>
                     </div>
@@ -144,6 +144,7 @@
         const clearBtn = document.getElementById('clear-btn');
         const copyBtn = document.getElementById('copy-btn');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
         const errorContainer = document.getElementById('error-container');
         const errorText = document.getElementById('error-text');
         const keyWarning = document.getElementById('key-warning');
@@ -210,72 +211,82 @@
             const key = apiKeyInput.value.trim();
             if (!inputText || !key) return;
 
+            // Prepara a UI para o carregamento
             inputEl.disabled = true;
             translateBtn.disabled = true;
-            btnText.innerText = 'PROCESSANDO...';
+            btnText.innerText = 'CONECTANDO...';
             btnSpinner.classList.remove('hidden-element');
             btnArrow.classList.add('hidden-element');
             loadingOverlay.classList.remove('hidden-element');
             errorContainer.classList.add('hidden-element');
 
-            // Prompt otimizado
-            const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR. REESCREVA O RELATO RECEBIDO EM TERMOS TÉCNICOS DE ENFERMAGEM (PADRÃO MS).
-            REGRAS:
-            1. RETORNE APENAS O TEXTO TÉCNICO.
-            2. SEM EXPLICAÇÕES OU MARKDOWN.
-            3. TUDO EM LETRAS MAIÚSCULAS.`;
-
-            const payload = {
-                contents: [
-                    { 
-                        role: "user", 
-                        parts: [{ text: `INSTRUÇÃO: ${systemPrompt}\n\nRELATO DO PACIENTE: ${inputText}` }] 
-                    }
-                ]
-            };
-
-            // LISTA DE TENTATIVAS AUTOMÁTICAS:
-            // O sistema tentará os modelos nesta ordem. Se um falhar por falta de acesso da chave, ele tenta o próximo.
-            const modelsToTry = ["gemini-1.5-flash", "gemini-pro", "gemini-1.0-pro"];
-            
-            let success = false;
-            let finalTranslatedText = "";
-            let lastErrorMsg = "";
-
-            for (const model of modelsToTry) {
-                // Voltamos para v1beta que é a versão mais permissiva com chaves gerais
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-                
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        finalTranslatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NÃO FOI POSSÍVEL TRADUZIR.";
-                        success = true;
-                        break; // Deu certo! Sai do loop e não tenta os outros modelos.
-                    } else {
-                        // Guarda o erro para mostrar caso todos falhem, mas continua pro próximo modelo
-                        lastErrorMsg = data.error?.message || `Erro HTTP ${response.status}`;
-                        console.warn(`Tentativa falhou no modelo ${model}. Tentando o próximo...`, lastErrorMsg);
-                    }
-                } catch (err) {
-                    lastErrorMsg = err.message;
-                    console.warn(`Erro de rede no modelo ${model}.`, err);
-                }
-            }
-
             try {
-                if (!success) {
-                    // Se passou por todos os modelos e nenhum funcionou, exibe o erro
-                    throw new Error(`NENHUM MODELO DISPONÍVEL PARA ESTA CHAVE. ÚLTIMO ERRO: ${lastErrorMsg}`);
+                // PASSO 1: AUTO-DESCOBERTA DE MODELOS
+                // Pergunta à Google quais modelos essa chave pode acessar
+                loadingText.innerText = 'VALIDANDO CHAVE E MODELOS...';
+                const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+                const modelsRes = await fetch(modelsUrl);
+                
+                if (!modelsRes.ok) {
+                    const errData = await modelsRes.json();
+                    throw new Error(`FALHA NA CHAVE: ${errData.error?.message || modelsRes.status}`);
+                }
+                
+                const modelsData = await modelsRes.json();
+                
+                // Filtra apenas modelos que suportam geração de texto e são da família Gemini
+                const availableModels = modelsData.models.filter(m => 
+                    m.supportedGenerationMethods && 
+                    m.supportedGenerationMethods.includes("generateContent") && 
+                    m.name.includes("gemini")
+                );
+
+                if (availableModels.length === 0) {
+                    throw new Error("SUA CHAVE É VÁLIDA, MAS NÃO TEM ACESSO A NENHUM MODELO GEMINI.");
                 }
 
+                // Escolhe o melhor modelo disponível (tenta o 1.5-flash, depois 1.5-pro, depois qualquer outro que existir)
+                const targetModelString = 
+                    availableModels.find(m => m.name.includes("gemini-1.5-flash"))?.name || 
+                    availableModels.find(m => m.name.includes("gemini-1.5-pro"))?.name || 
+                    availableModels.find(m => m.name.includes("gemini-1.0"))?.name || 
+                    availableModels[0].name;
+
+                // PASSO 2: FAZER A TRADUÇÃO COM O MODELO DESCOBERTO
+                loadingText.innerText = 'GERANDO TRADUÇÃO...';
+                btnText.innerText = 'TRADUZINDO...';
+
+                const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR. REESCREVA O RELATO RECEBIDO EM TERMOS TÉCNICOS DE ENFERMAGEM (PADRÃO MS).
+                REGRAS:
+                1. RETORNE APENAS O TEXTO TÉCNICO.
+                2. SEM EXPLICAÇÕES OU MARKDOWN.
+                3. TUDO EM LETRAS MAIÚSCULAS.`;
+
+                const payload = {
+                    contents: [
+                        { 
+                            role: "user", 
+                            parts: [{ text: `INSTRUÇÃO: ${systemPrompt}\n\nRELATO DO PACIENTE: ${inputText}` }] 
+                        }
+                    ]
+                };
+
+                // targetModelString já vem no formato "models/nome-do-modelo"
+                const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${targetModelString}:generateContent?key=${key}`;
+                
+                const generateRes = await fetch(generateUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const generateData = await generateRes.json();
+
+                if (!generateRes.ok) {
+                    throw new Error(generateData.error?.message || `Erro HTTP ${generateRes.status}`);
+                }
+
+                let finalTranslatedText = generateData.candidates?.[0]?.content?.parts?.[0]?.text || "NÃO FOI POSSÍVEL TRADUZIR.";
                 finalTranslatedText = finalTranslatedText.replace(/[*#]/g, '').trim();
 
                 outputEl.value = finalTranslatedText.toUpperCase();
@@ -285,8 +296,9 @@
                 copyBtn.classList.add('flex');
                 
             } catch (err) {
-                errorText.innerText = "ERRO: " + err.message;
+                errorText.innerText = err.message;
                 errorContainer.classList.remove('hidden-element');
+                console.error(err);
             } finally {
                 inputEl.disabled = false;
                 loadingOverlay.classList.add('hidden-element');
