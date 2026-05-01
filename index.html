@@ -12,6 +12,8 @@
         /* Estilos adicionais mínimos para garantir que as caixas de texto fiquem perfeitas */
         textarea { outline: none; }
         .hidden-element { display: none !important; }
+        /* Garante que o texto seja sempre maiúsculo no ecrã */
+        .force-uppercase { text-transform: uppercase; }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-200">
@@ -49,7 +51,7 @@
                     <label for="symptoms-input" class="sr-only">Sintomas (Termo Leigo)</label>
                     <textarea
                         id="symptoms-input"
-                        class="w-full h-48 md:h-80 p-3 md:p-4 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none uppercase text-base md:text-lg text-slate-700 placeholder:text-slate-400 font-medium"
+                        class="w-full h-48 md:h-80 p-3 md:p-4 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none force-uppercase text-base md:text-lg text-slate-700 placeholder:text-slate-400 font-medium"
                         placeholder="EX: PACIENTE RECLAMA DE DOR DE CABEÇA FORTE, ESTÁ QUENTE E COM VONTADE DE VOMITAR..."
                     ></textarea>
                     
@@ -91,7 +93,7 @@
                         <textarea
                             id="technical-output"
                             readonly
-                            class="w-full h-full min-h-[12rem] md:min-h-[16rem] p-3 md:p-4 bg-white border border-slate-200 rounded-lg resize-none uppercase text-base md:text-lg text-slate-800 font-semibold focus:outline-none text-slate-300 items-center justify-center"
+                            class="w-full h-full min-h-[12rem] md:min-h-[16rem] p-3 md:p-4 bg-white border border-slate-200 rounded-lg resize-none force-uppercase text-base md:text-lg text-slate-800 font-semibold focus:outline-none text-slate-300 items-center justify-center"
                             placeholder="A TRADUÇÃO TÉCNICA APARECERÁ AQUI..."
                         ></textarea>
                         
@@ -114,9 +116,8 @@
         // Inicializa os ícones do Lucide
         lucide.createIcons();
 
-        // ATENÇÃO: O ambiente de teste exige que a variável inicie vazia.
+        // Chave de API - No Canvas fica vazia, no GitHub usa a sua chave real
         let apiKey = ""; 
-        // Se estiver rodando no GitHub Pages, usamos a sua chave real automaticamente!
         if (window.location.hostname.includes("github.io")) {
             apiKey = "AIzaSyB_dXyluIU5N4ISI6Fn3366vTFgeq-iQqE";
         }
@@ -141,7 +142,7 @@
         const copyIconCheck = document.getElementById('copy-icon-check');
         const copyTextLabel = document.getElementById('copy-text');
 
-        // Guarda a posição do cursor para não pular durante a digitação
+        // Evento de digitação: Força maiúsculo e habilita/desabilita botão
         inputEl.addEventListener('input', (e) => {
             const start = e.target.selectionStart;
             const end = e.target.selectionEnd;
@@ -193,39 +194,28 @@
             SUA FUNÇÃO É RECEBER UM RELATO LEIGO E REESCREVÊ-LO COMO UMA ANOTAÇÃO/EVOLUÇÃO DE ENFERMAGEM PROFISSIONAL, 
             UTILIZANDO ESTRITAMENTE A TERMINOLOGIA TÉCNICA E MÉDICA CORRETA SEGUNDO AS DIRETRIZES DO MINISTÉRIO DA SAÚDE DO BRASIL.
 
-            EXEMPLOS DE TRADUÇÃO (DE LEIGO PARA TÉCNICO):
-            - "Dor de cabeça" -> "CEFALEIA"
-            - "Falta de ar" -> "DISPNEIA"
-            - "Vontade de vomitar" -> "NÁUSEA"
-            - "Vômito" -> "ÊMESE"
-            - "Suador" -> "SUDORESE PROFUSA"
-            - "Pele amarela" -> "ICTERÍCIA"
-            - "Sangramento no nariz" -> "EPISTAXE"
-            - "Pressão alta" -> "HIPERTENSÃO"
-            - "Batimento acelerado" -> "TAQUICARDIA"
-            - "Urina com sangue" -> "HEMATÚRIA"
-
             REGRAS OBRIGATÓRIAS:
             1. REESCREVA O TEXTO EM FORMATO DE ANOTAÇÃO DE ENFERMAGEM CLARA, COESA, OBJETIVA E TÉCNICA.
-            2. NÃO INCLUA EXPLICAÇÕES, CUMPRIMENTOS, AVISOS OU INTRODUÇÕES COMO "AQUI ESTÁ A TRADUÇÃO".
-            3. RETORNE DIRETAMENTE O TEXTO TÉCNICO PRONTO PARA SER COPIADO PARA O PRONTUÁRIO DO PACIENTE.
-            4. NÃO USE MARKDOWN (NÃO USE ASTERISCOS ** PARA NEGRITO, NÃO USE TRAÇOS DE LISTA A MENOS QUE NECESSÁRIO).
-            5. FORMATE ABSOLUTAMENTE TODA A SUA RESPOSTA EM LETRAS MAIÚSCULAS.`;
+            2. NÃO INCLUA EXPLICAÇÕES, CUMPRIMENTOS OU INTRODUÇÕES. RETORNE APENAS O TEXTO TÉCNICO.
+            3. NÃO USE MARKDOWN (SEM ASTERISCOS OU TRAÇOS).
+            4. FORMATE ABSOLUTAMENTE TODA A SUA RESPOSTA EM LETRAS MAIÚSCULAS.`;
 
-            // Detecta qual modelo usar (público no GitHub, testes no Canvas)
-            let modelName = "gemini-2.5-flash-preview-09-2025";
+            // CONFIGURAÇÃO DE URL E MODELO
+            let apiVersion = "v1beta";
+            let modelName = "gemini-2.5-flash-preview-09-2025"; // Modelo para este ambiente (Canvas)
+
+            // Se estiver no GitHub, usa a versão Estável (v1) e o modelo padrão (gemini-1.5-flash)
             if (window.location.hostname.includes("github.io")) {
-                // Alterado para a versão "latest" para evitar o erro de modelo não encontrado
-                modelName = "gemini-1.5-flash-latest";
+                apiVersion = "v1";
+                modelName = "gemini-1.5-flash";
             }
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+            const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
             
             const payload = {
                 contents: [{ parts: [{ text: inputText }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] }
             };
-
-            let success = false;
 
             try {
                 const response = await fetch(url, {
@@ -234,15 +224,16 @@
                     body: JSON.stringify(payload)
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                    throw new Error(data.error?.message || `Erro HTTP ${response.status}`);
                 }
 
-                const data = await response.json();
                 let translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NENHUM RESULTADO ENCONTRADO.";
                 
-                translatedText = translatedText.replace(/\*\*/g, '').replace(/\*/g, '');
+                // Limpeza final de formatação
+                translatedText = translatedText.replace(/[*#]/g, '');
 
                 outputEl.value = translatedText.toUpperCase();
                 outputEl.classList.remove('text-slate-300');
@@ -251,25 +242,24 @@
                 copyBtn.classList.remove('hidden-element');
                 copyBtn.classList.add('flex');
                 
-                success = true;
-                
             } catch (err) {
-                errorText.innerText = "ERRO DE CONEXÃO: " + err.message + ". VERIFIQUE SE SUA CHAVE DE API ESTÁ CORRETA.";
+                errorText.innerText = "ERRO DE CONEXÃO: " + err.message + ". VERIFIQUE SE A CHAVE DE API TEM PERMISSÃO PARA O MODELO.";
                 errorContainer.classList.remove('hidden-element');
-                console.error(err);
+                console.error("ERRO COMPLETO:", err);
+            } finally {
+                inputEl.disabled = false;
+                translateBtn.disabled = false;
+                translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
+                translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
+                
+                btnText.innerText = 'TRADUZIR PARA TERMO TÉCNICO';
+                btnSpinner.classList.add('hidden-element');
+                btnArrow.classList.remove('hidden-element');
+                loadingOverlay.classList.add('hidden-element');
             }
-            
-            inputEl.disabled = false;
-            translateBtn.disabled = false;
-            translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
-            translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
-            
-            btnText.innerText = 'TRADUZIR PARA TERMO TÉCNICO';
-            btnSpinner.classList.add('hidden-element');
-            btnArrow.classList.remove('hidden-element');
-            loadingOverlay.classList.add('hidden-element');
         });
 
+        // Evento do Botão Copiar
         copyBtn.addEventListener('click', () => {
             if (!outputEl.value) return;
 
@@ -277,7 +267,12 @@
             outputEl.setSelectionRange(0, 99999); 
 
             try {
-                document.execCommand('copy');
+                // Tenta usar a API de clipboard moderna ou fallback para execCommand
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(outputEl.value);
+                } else {
+                    document.execCommand('copy');
+                }
                 
                 copyBtn.classList.remove('bg-white', 'text-teal-700', 'hover:bg-teal-100');
                 copyBtn.classList.add('bg-teal-600', 'text-white');
