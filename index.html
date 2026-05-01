@@ -218,16 +218,13 @@
             loadingOverlay.classList.remove('hidden-element');
             errorContainer.classList.add('hidden-element');
 
-            // Prompt otimizado inserido diretamente na parte do usuário
+            // Prompt otimizado
             const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR. REESCREVA O RELATO RECEBIDO EM TERMOS TÉCNICOS DE ENFERMAGEM (PADRÃO MS).
             REGRAS:
             1. RETORNE APENAS O TEXTO TÉCNICO.
             2. SEM EXPLICAÇÕES OU MARKDOWN.
             3. TUDO EM LETRAS MAIÚSCULAS.`;
 
-            // Usamos v1 (ESTÁVEL) pois agora não temos mais campos restritos ao beta
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
-            
             const payload = {
                 contents: [
                     { 
@@ -237,23 +234,51 @@
                 ]
             };
 
+            // LISTA DE TENTATIVAS AUTOMÁTICAS:
+            // O sistema tentará os modelos nesta ordem. Se um falhar por falta de acesso da chave, ele tenta o próximo.
+            const modelsToTry = ["gemini-1.5-flash", "gemini-pro", "gemini-1.0-pro"];
+            
+            let success = false;
+            let finalTranslatedText = "";
+            let lastErrorMsg = "";
+
+            for (const model of modelsToTry) {
+                // Voltamos para v1beta que é a versão mais permissiva com chaves gerais
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+                
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        finalTranslatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NÃO FOI POSSÍVEL TRADUZIR.";
+                        success = true;
+                        break; // Deu certo! Sai do loop e não tenta os outros modelos.
+                    } else {
+                        // Guarda o erro para mostrar caso todos falhem, mas continua pro próximo modelo
+                        lastErrorMsg = data.error?.message || `Erro HTTP ${response.status}`;
+                        console.warn(`Tentativa falhou no modelo ${model}. Tentando o próximo...`, lastErrorMsg);
+                    }
+                } catch (err) {
+                    lastErrorMsg = err.message;
+                    console.warn(`Erro de rede no modelo ${model}.`, err);
+                }
+            }
+
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error?.message || `ERRO HTTP ${response.status}`);
+                if (!success) {
+                    // Se passou por todos os modelos e nenhum funcionou, exibe o erro
+                    throw new Error(`NENHUM MODELO DISPONÍVEL PARA ESTA CHAVE. ÚLTIMO ERRO: ${lastErrorMsg}`);
                 }
 
-                let translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NÃO FOI POSSÍVEL TRADUZIR.";
-                translatedText = translatedText.replace(/[*#]/g, '').trim();
+                finalTranslatedText = finalTranslatedText.replace(/[*#]/g, '').trim();
 
-                outputEl.value = translatedText.toUpperCase();
+                outputEl.value = finalTranslatedText.toUpperCase();
                 outputEl.classList.remove('text-slate-300');
                 outputEl.classList.add('text-slate-800');
                 copyBtn.classList.remove('hidden-element');
