@@ -4,51 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EnferIA - Termos Técnicos</title>
-    <!-- Tailwind CSS (CDN para não precisar instalar nada) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ícones Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* Estilos adicionais mínimos para garantir que as caixas de texto fiquem perfeitas */
         textarea { outline: none; }
         .hidden-element { display: none !important; }
-        /* Garante que o texto seja sempre maiúsculo no ecrã */
         .force-uppercase { text-transform: uppercase; }
+        /* Estilo para o campo de API brilhar se estiver vazio */
+        .api-pulse { border: 2px solid #14b8a6; animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(20, 184, 166, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-200">
 
     <!-- Header -->
     <header class="bg-teal-700 text-white shadow-md">
-        <div class="container mx-auto px-4 py-6 max-w-5xl flex items-center justify-between">
+        <div class="container mx-auto px-4 py-4 max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-white/20 p-2 rounded-lg">
-                    <i data-lucide="stethoscope" class="text-teal-50 w-8 h-8"></i>
+                    <i data-lucide="stethoscope" class="text-teal-50 w-6 h-6 sm:w-8 sm:h-8"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold tracking-wide uppercase">EnferIA Termos Técnicos</h1>
-                    <p class="text-teal-100 text-sm font-medium uppercase tracking-wider">Padrão Ministério da Saúde</p>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-wide uppercase">EnferIA Termos Técnicos</h1>
+                    <p class="text-teal-100 text-[10px] sm:text-xs font-medium uppercase tracking-wider">Padrão Ministério da Saúde</p>
+                </div>
+            </div>
+            
+            <!-- Campo de Chave de API -->
+            <div class="w-full sm:w-auto flex flex-col gap-1">
+                <label for="api-key-input" class="text-[10px] uppercase font-bold text-teal-100 ml-1">Chave de API Gemini</label>
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="api-key-input" 
+                        placeholder="COLE SUA CHAVE AQUI" 
+                        class="w-full sm:w-64 bg-teal-800 border border-teal-600 text-white text-xs rounded-lg px-3 py-2 focus:ring-2 focus:ring-white focus:outline-none placeholder:text-teal-400 uppercase font-mono"
+                    >
+                    <i data-lucide="key" class="absolute right-2.5 top-2 w-3.5 h-3.5 text-teal-400"></i>
                 </div>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8 max-w-5xl">
+    <main class="container mx-auto px-4 py-6 md:py-8 max-w-5xl">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             
-            <!-- Painel Esquerdo: Input Section -->
+            <!-- Painel Esquerdo: Input -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
                 <div class="bg-slate-100/50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-                    <h2 class="font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                    <h2 class="font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 text-sm sm:text-base">
                         Relato do Paciente
                     </h2>
-                    <button id="clear-btn" class="text-slate-400 hover:text-teal-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase" title="LIMPAR DADOS">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Limpar
+                    <button id="clear-btn" class="text-slate-400 hover:text-teal-600 transition-colors flex items-center gap-1 text-[10px] font-bold uppercase">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Limpar
                     </button>
                 </div>
                 <div class="p-4 md:p-6 flex-grow flex flex-col">
-                    <label for="symptoms-input" class="sr-only">Sintomas (Termo Leigo)</label>
                     <textarea
                         id="symptoms-input"
                         class="w-full h-48 md:h-80 p-3 md:p-4 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none force-uppercase text-base md:text-lg text-slate-700 placeholder:text-slate-400 font-medium"
@@ -67,29 +85,34 @@
                 </div>
             </div>
 
-            <!-- Painel Direito: Output Section -->
+            <!-- Painel Direito: Output -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
                 <div class="bg-teal-50 border-b border-teal-100 px-6 py-4 flex justify-between items-center">
-                    <h2 class="font-bold text-teal-800 uppercase tracking-wide flex items-center gap-2">
-                        Evolução / Termo Técnico
+                    <h2 class="font-bold text-teal-800 uppercase tracking-wide flex items-center gap-2 text-sm sm:text-base">
+                        Evolução Técnica
                     </h2>
                     
-                    <button id="copy-btn" class="hidden-element items-center gap-1 text-xs font-bold uppercase transition-colors px-3 py-1.5 rounded-md bg-white border border-teal-200 text-teal-700 hover:bg-teal-100">
-                        <i data-lucide="copy" id="copy-icon-regular" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="check-circle-2" id="copy-icon-check" class="w-3.5 h-3.5 hidden-element"></i>
-                        <span id="copy-text" class="hidden sm:inline">COPIAR</span>
+                    <button id="copy-btn" class="hidden-element items-center gap-1 text-[10px] font-bold uppercase transition-colors px-3 py-1.5 rounded-md bg-white border border-teal-200 text-teal-700 hover:bg-teal-100">
+                        <i data-lucide="copy" id="copy-icon-regular" class="w-3 h-3"></i>
+                        <i data-lucide="check-circle-2" id="copy-icon-check" class="w-3 h-3 hidden-element"></i>
+                        <span id="copy-text">COPIAR</span>
                     </button>
-                    
                 </div>
                 
                 <div class="p-4 md:p-6 flex-grow flex flex-col">
+                    <!-- Alerta de Chave Faltante -->
+                    <div id="key-warning" class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-amber-700">
+                        <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+                        <p class="text-[10px] font-bold uppercase">INSIRA SUA CHAVE DE API NO TOPO DA PÁGINA PARA COMEÇAR.</p>
+                    </div>
+
                     <!-- Mensagem de Erro -->
                     <div id="error-container" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700 hidden-element">
                         <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
-                        <p id="error-text" class="text-sm font-bold uppercase leading-relaxed"></p>
+                        <p id="error-text" class="text-xs font-bold uppercase leading-relaxed"></p>
                     </div>
 
-                    <div class="relative flex-grow">
+                    <div class="relative flex-grow h-full">
                         <textarea
                             id="technical-output"
                             readonly
@@ -101,7 +124,7 @@
                         <div id="loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center border border-slate-200 hidden-element">
                             <div class="flex flex-col items-center gap-3 text-teal-600">
                                 <i data-lucide="refresh-cw" class="w-8 h-8 animate-spin"></i>
-                                <span class="font-bold tracking-widest uppercase text-sm">CONSULTANDO DIRETRIZES...</span>
+                                <span class="font-bold tracking-widest uppercase text-[10px]">CONSULTANDO IA...</span>
                             </div>
                         </div>
                     </div>
@@ -111,109 +134,108 @@
         </div>
     </main>
 
-    <!-- JavaScript para gerenciar a lógica -->
     <script>
-        // Inicializa os ícones do Lucide
         lucide.createIcons();
 
-        // Chave de API - No Canvas fica vazia, no GitHub usa a sua chave real
-        let apiKey = ""; 
-        if (window.location.hostname.includes("github.io")) {
-            apiKey = "AIzaSyB_dXyluIU5N4ISI6Fn3366vTFgeq-iQqE";
-        }
-
-        // Elementos do DOM
         const inputEl = document.getElementById('symptoms-input');
         const outputEl = document.getElementById('technical-output');
+        const apiKeyInput = document.getElementById('api-key-input');
         const translateBtn = document.getElementById('translate-btn');
         const clearBtn = document.getElementById('clear-btn');
         const copyBtn = document.getElementById('copy-btn');
         const loadingOverlay = document.getElementById('loading-overlay');
         const errorContainer = document.getElementById('error-container');
         const errorText = document.getElementById('error-text');
+        const keyWarning = document.getElementById('key-warning');
 
-        // Elementos internos do botão Traduzir
         const btnText = document.getElementById('btn-text');
         const btnSpinner = document.getElementById('btn-spinner');
         const btnArrow = document.getElementById('btn-arrow');
 
-        // Elementos internos do botão Copiar
-        const copyIconRegular = document.getElementById('copy-icon-regular');
-        const copyIconCheck = document.getElementById('copy-icon-check');
-        const copyTextLabel = document.getElementById('copy-text');
+        // Carrega chave salva na sessão (se houver)
+        const savedKey = sessionStorage.getItem('enferia_key');
+        if (savedKey) {
+            apiKeyInput.value = savedKey;
+            keyWarning.classList.add('hidden-element');
+        } else {
+            apiKeyInput.classList.add('api-pulse');
+        }
 
-        // Evento de digitação: Força maiúsculo e habilita/desabilita botão
+        // Monitora entrada da API Key
+        apiKeyInput.addEventListener('input', (e) => {
+            if (e.target.value.trim().length > 5) {
+                apiKeyInput.classList.remove('api-pulse');
+                keyWarning.classList.add('hidden-element');
+                sessionStorage.setItem('enferia_key', e.target.value.trim());
+            } else {
+                apiKeyInput.classList.add('api-pulse');
+                keyWarning.classList.remove('hidden-element');
+            }
+            validateButton();
+        });
+
+        function validateButton() {
+            const hasText = inputEl.value.trim().length > 0;
+            const hasKey = apiKeyInput.value.trim().length > 5;
+            
+            if (hasText && hasKey) {
+                translateBtn.disabled = false;
+                translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
+                translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'shadow-md');
+            } else {
+                translateBtn.disabled = true;
+                translateBtn.classList.add('bg-slate-300', 'cursor-not-allowed');
+                translateBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'shadow-md');
+            }
+        }
+
         inputEl.addEventListener('input', (e) => {
             const start = e.target.selectionStart;
             const end = e.target.selectionEnd;
             e.target.value = e.target.value.toUpperCase();
             e.target.setSelectionRange(start, end);
-            
-            if (e.target.value.trim().length > 0) {
-                translateBtn.disabled = false;
-                translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
-                translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
-            } else {
-                translateBtn.disabled = true;
-                translateBtn.classList.add('bg-slate-300', 'cursor-not-allowed');
-                translateBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
-            }
+            validateButton();
         });
 
         clearBtn.addEventListener('click', () => {
             inputEl.value = '';
             outputEl.value = '';
-            outputEl.classList.add('text-slate-300');
-            outputEl.classList.remove('shadow-inner', 'text-slate-800');
             errorContainer.classList.add('hidden-element');
             copyBtn.classList.add('hidden-element');
-            copyBtn.classList.remove('flex');
-            inputEl.dispatchEvent(new Event('input'));
+            validateButton();
         });
 
         translateBtn.addEventListener('click', async () => {
             const inputText = inputEl.value.trim();
-            if (!inputText) return;
+            const key = apiKeyInput.value.trim();
+            if (!inputText || !key) return;
 
             inputEl.disabled = true;
             translateBtn.disabled = true;
-            translateBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
-            translateBtn.classList.add('bg-slate-300', 'cursor-not-allowed');
-            
-            btnText.innerText = 'PROCESSANDO TRADUÇÃO...';
+            btnText.innerText = 'PROCESSANDO...';
             btnSpinner.classList.remove('hidden-element');
             btnArrow.classList.add('hidden-element');
-            
             loadingOverlay.classList.remove('hidden-element');
             errorContainer.classList.add('hidden-element');
-            outputEl.value = '';
-            copyBtn.classList.add('hidden-element');
-            copyBtn.classList.remove('flex');
 
-            const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR E ASSISTENTE ESPECIALISTA. 
-            SUA FUNÇÃO É RECEBER UM RELATO LEIGO E REESCREVÊ-LO COMO UMA ANOTAÇÃO/EVOLUÇÃO DE ENFERMAGEM PROFISSIONAL, 
-            UTILIZANDO ESTRITAMENTE A TERMINOLOGIA TÉCNICA E MÉDICA CORRETA SEGUNDO AS DIRETRIZES DO MINISTÉRIO DA SAÚDE DO BRASIL.
+            // Prompt otimizado para não depender apenas de systemInstruction caso o modelo seja antigo
+            const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR. REESCREVA O RELATO RECEBIDO EM TERMOS TÉCNICOS DE ENFERMAGEM (PADRÃO MS).
+            REGRAS:
+            1. RETORNE APENAS O TEXTO TÉCNICO.
+            2. SEM EXPLICAÇÕES OU MARKDOWN.
+            3. TUDO EM LETRAS MAIÚSCULAS.`;
 
-            REGRAS OBRIGATÓRIAS:
-            1. REESCREVA O TEXTO EM FORMATO DE ANOTAÇÃO DE ENFERMAGEM CLARA, COESA, OBJETIVA E TÉCNICA.
-            2. NÃO INCLUA EXPLICAÇÕES, CUMPRIMENTOS OU INTRODUÇÕES. RETORNE APENAS O TEXTO TÉCNICO.
-            3. NÃO USE MARKDOWN (SEM ASTERISCOS OU TRAÇOS).
-            4. FORMATE ABSOLUTAMENTE TODA A SUA RESPOSTA EM LETRAS MAIÚSCULAS.`;
-
-            // CONFIGURAÇÃO DE URL E MODELO
-            // Mudamos para v1beta em todos os casos, pois ela é a versão que suporta systemInstruction de forma estável.
-            const apiVersion = "v1beta"; 
-            let modelName = "gemini-2.5-flash-preview-09-2025"; // Modelo para o Canvas
-
-            if (window.location.hostname.includes("github.io")) {
-                modelName = "gemini-1.5-flash"; // Modelo para o GitHub
-            }
-
-            const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
+            // Usamos v1beta pois é a mais compatível com requisições diretas via fetch no navegador
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
             
             const payload = {
-                contents: [{ parts: [{ text: inputText }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] }
+                contents: [
+                    { 
+                        role: "user", 
+                        parts: [{ text: `INSTRUÇÃO: ${systemPrompt}\n\nRELATO DO PACIENTE: ${inputText}` }] 
+                    }
+                ]
+                // Removido systemInstruction como campo separado para evitar erro "Unknown name" em algumas chaves
             };
 
             try {
@@ -226,70 +248,44 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error?.message || `Erro HTTP ${response.status}`);
+                    throw new Error(data.error?.message || `ERRO HTTP ${response.status}`);
                 }
 
-                let translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NENHUM RESULTADO ENCONTRADO.";
-                
-                // Limpeza final de formatação
-                translatedText = translatedText.replace(/[*#]/g, '');
+                let translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "NÃO FOI POSSÍVEL TRADUZIR.";
+                translatedText = translatedText.replace(/[*#]/g, '').trim();
 
                 outputEl.value = translatedText.toUpperCase();
                 outputEl.classList.remove('text-slate-300');
-                outputEl.classList.add('shadow-inner', 'text-slate-800');
-                
+                outputEl.classList.add('text-slate-800');
                 copyBtn.classList.remove('hidden-element');
                 copyBtn.classList.add('flex');
                 
             } catch (err) {
-                errorText.innerText = "ERRO DE CONEXÃO: " + err.message + ". VERIFIQUE SE A CHAVE DE API TEM PERMISSÃO PARA O MODELO.";
+                errorText.innerText = "ERRO: " + err.message;
                 errorContainer.classList.remove('hidden-element');
-                console.error("ERRO COMPLETO:", err);
             } finally {
                 inputEl.disabled = false;
-                translateBtn.disabled = false;
-                translateBtn.classList.remove('bg-slate-300', 'cursor-not-allowed');
-                translateBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'hover:shadow-lg', 'active:scale-[0.98]', 'shadow-md');
-                
+                loadingOverlay.classList.add('hidden-element');
                 btnText.innerText = 'TRADUZIR PARA TERMO TÉCNICO';
                 btnSpinner.classList.add('hidden-element');
                 btnArrow.classList.remove('hidden-element');
-                loadingOverlay.classList.add('hidden-element');
+                validateButton();
             }
         });
 
-        // Evento do Botão Copiar
         copyBtn.addEventListener('click', () => {
-            if (!outputEl.value) return;
-
             outputEl.select();
-            outputEl.setSelectionRange(0, 99999); 
+            document.execCommand('copy');
+            
+            copyIconRegular.classList.add('hidden-element');
+            copyIconCheck.classList.remove('hidden-element');
+            copyTextLabel.innerText = 'COPIADO!';
 
-            try {
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(outputEl.value);
-                } else {
-                    document.execCommand('copy');
-                }
-                
-                copyBtn.classList.remove('bg-white', 'text-teal-700', 'hover:bg-teal-100');
-                copyBtn.classList.add('bg-teal-600', 'text-white');
-                copyIconRegular.classList.add('hidden-element');
-                copyIconCheck.classList.remove('hidden-element');
-                copyTextLabel.innerText = 'COPIADO!';
-
-                setTimeout(() => {
-                    copyBtn.classList.add('bg-white', 'text-teal-700', 'hover:bg-teal-100');
-                    copyBtn.classList.remove('bg-teal-600', 'text-white');
-                    copyIconRegular.classList.remove('hidden-element');
-                    copyIconCheck.classList.add('hidden-element');
-                    copyTextLabel.innerText = 'COPIAR';
-                    window.getSelection().removeAllRanges();
-                }, 2000);
-
-            } catch (err) {
-                console.error('Falha ao copiar texto', err);
-            }
+            setTimeout(() => {
+                copyIconRegular.classList.remove('hidden-element');
+                copyIconCheck.classList.add('hidden-element');
+                copyTextLabel.innerText = 'COPIAR';
+            }, 2000);
         });
     </script>
 </body>
