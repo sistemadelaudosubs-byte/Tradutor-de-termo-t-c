@@ -292,7 +292,7 @@
             errorContainer.classList.add('hidden-element');
 
             try {
-                // PASSO 1: AUTO-DESCOBERTA DE MODELOS
+                // PASSO 1: AUTO-DESCOBERTA DE MODELOS COM RETRY
                 loadingText.innerText = 'VALIDANDO ACESSO...';
                 const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
                 const modelsRes = await fetch(modelsUrl);
@@ -319,11 +319,10 @@
                     availableModels.find(m => m.name.includes("gemini-1.0"))?.name || 
                     availableModels[0].name;
 
-                // PASSO 2: FAZER A TRADUÇÃO COM O PROMPT PARA 3 OPÇÕES
+                // PASSO 2: FAZER A TRADUÇÃO COM TENTATIVAS AUTOMÁTICAS (EXPONENTIAL BACKOFF)
                 loadingText.innerText = 'CRIANDO 3 OPÇÕES DE EVOLUÇÃO...';
                 btnText.innerText = 'PROCESSANDO...';
 
-                // Prompt Ultra Detalhado Exigindo 3 Tags Específicas
                 const systemPrompt = `VOCÊ É UM ENFERMEIRO AUDITOR. REESCREVA O TEXTO RECEBIDO EM ANOTAÇÕES DE ENFERMAGEM TÉCNICAS (PADRÃO MS).
                 DIRETRIZES GERAIS: Traduza jargões de sintomas para termos técnicos. Padronize a administração de medicamentos (ex: "na veia" = EV, "no músculo" = IM, "pela boca" = VO).
                 
@@ -356,16 +355,60 @@
 
                 const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${targetModelString}:generateContent?key=${key}`;
                 
-                const generateRes = await fetch(generateUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                let generateRes;
+                let generateData;
+                let success = false;
+                const maxRetries = 5; // Tenta até 5 vezes em caso de falha no servidor
+                const baseDelay = 2000; // Tempo base de 2 segundos
 
-                const generateData = await generateRes.json();
+                for (let attempt = 0; attempt < maxRetries; attempt++) {
+                    try {
+                        if (attempt > 0) {
+                            loadingText.innerText = `SISTEMA OCUPADO. TENTATIVA ${attempt + 1} DE ${maxRetries}...`;
+                        }
 
-                if (!generateRes.ok) {
-                    throw new Error(generateData.error?.message || `Erro HTTP ${generateRes.status}`);
+                        generateRes = await fetch(generateUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        generateData = await generateRes.json();
+
+                        if (generateRes.ok) {
+                            success = true;
+                            break; // Se deu certo (código 200), sai do loop
+                        }
+
+                        // Verifica se é um erro de servidor (503 Service Unavailable / 429 Too Many Requests)
+                        if (generateRes.status >= 500 || generateRes.status === 429) {
+                            if (attempt === maxRetries - 1) {
+                                throw new Error(generateData.error?.message || "O servidor da inteligência artificial está sobrecarregado no momento. Tente novamente mais tarde.");
+                            }
+                            // Cálculo do Recuo Exponencial (Espera 2s, 4s, 8s, 16s...)
+                            const delay = baseDelay * Math.pow(2, attempt);
+                            loadingText.innerText = `ALTA DEMANDA. AGUARDANDO ${delay / 1000}s...`;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue; // Volta e tenta de novo
+                        } else {
+                            // Erros como credenciais erradas ou bloqueios irreversíveis não devem ser retentados
+                            throw new Error(generateData.error?.message || `Erro HTTP ${generateRes.status}`);
+                        }
+
+                    } catch (err) {
+                        // Se for o último loop, devolve o erro definitivo
+                        if (attempt === maxRetries - 1 || (!err.message.includes("fetch") && !err.message.includes("sobrecarregado"))) {
+                            throw err;
+                        }
+                        // Erro de rede (fetch falhou) - tenta novamente
+                        const delay = baseDelay * Math.pow(2, attempt);
+                        loadingText.innerText = `FALHA NA CONEXÃO. RECONECTANDO EM ${delay / 1000}s...`;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+
+                if (!success || !generateData) {
+                    throw new Error("Não foi possível gerar a tradução após várias tentativas.");
                 }
 
                 let aiResponseText = generateData.candidates?.[0]?.content?.parts?.[0]?.text || "";
